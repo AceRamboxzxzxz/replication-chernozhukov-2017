@@ -5,7 +5,7 @@
 #  by V.Chernozhukov, D. Chetverikov, M. Demirer, E. Duflo, C. Hansen, W. Newey                         #           
 #########################################################################################################
 
-source("ML_Functions.R") 
+source(file.path(getwd(), "input/ML_Functions.R")) 
 
 DoubleML <- function(data, y, d, xx, xL, methods, nfold, est, arguments, ensemble, silent=FALSE, trim){
   

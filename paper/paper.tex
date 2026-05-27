@@ -1,0 +1,126 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+
+\title{Replicating Table 1, Panel B from\\Chernozhukov et al.\ (2017)}
+\author{Aaron Chotzen-Jenner}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{The Original Paper}
+
+Chernozhukov, Chetverikov, Demirer, Duflo, Hansen, and Newey (2017),
+``Double/Debiased/Neyman Machine Learning of Treatment Effects,''
+\textit{American Economic Review: Papers \& Proceedings}, 107(5): 261--265,
+introduces the Double/Debiased Machine Learning (Double ML) estimator for
+causal inference in settings where high-dimensional nuisance parameters must
+be estimated. The central research question is how to obtain valid,
+root-$N$ consistent estimates of a treatment effect parameter $\theta_0$
+when the confounding functions are estimated using flexible machine learning
+methods that introduce regularization bias.
+
+The empirical strategy rests on two ingredients. First, the estimating
+equation is made Neyman-orthogonal, meaning it is locally insensitive to
+small errors in the nuisance parameter estimates. Second, cross-fitting
+is used to split the sample into folds, training the nuisance functions
+on held-out data to avoid overfitting bias. Together these two steps
+remove the regularization bias that would otherwise contaminate a naive
+plug-in estimator.
+
+\section{The Result of Interest}
+
+The specific result I replicate is the Mean Average Treatment Effect (ATE)
+of 401(k) eligibility on net total financial assets reported in Table 1,
+Panel B (Partially Linear Model, 2-fold cross-fitting), Ensemble column
+of the online appendix. The paper reports a Mean ATE of \$9,043 with a
+standard error of 1,432.
+
+This result is the headline finding of the empirical illustration: after
+flexibly controlling for income and other confounders using an ensemble of
+machine learning methods, 401(k) eligibility raises net financial assets
+by roughly \$9,000. It is the cleanest single number to target because
+it corresponds to the default specification in the replication code
+(\texttt{Master.R}), uses the partially linear model which is the
+paper's primary specification, and the Ensemble method which combines
+all ML approaches optimally.
+
+\section{Data and Methods}
+
+The data come from the 1991 Survey of Income and Program Participation
+(SIPP), the same dataset used in Chernozhukov and Hansen (2004). The
+sample contains 9,915 observations. The outcome variable \texttt{net\_tfa}
+is net total financial assets (in USD), defined as the sum of IRA balances,
+401(k) balances, checking accounts, saving bonds, and other
+interest-earning assets less non-mortgage debt. The treatment variable
+\texttt{e401} is a binary indicator for eligibility to enroll in a 401(k)
+plan. The nine covariates used in the model are age, income, years of
+education, family size, and binary indicators for married status,
+two-earner household, defined benefit pension, IRA participation, and
+home ownership.
+
+\texttt{preprocess.R} loads the raw Stata file \texttt{sipp1991.dta} from
+\texttt{input/}, selects the eleven relevant variables, and writes a clean
+CSV to \texttt{temp/clean\_data.csv}. \texttt{analysis.R} loads that file,
+sources the original helper functions \texttt{ML\_Functions.R} and
+\texttt{Moment\_Functions.R} from \texttt{input/}, and calls
+\texttt{DoubleML()} with the partially linear model specification and
+2-fold cross-fitting. The estimation is repeated over 10 random sample
+splits (the paper uses 100) using parallel computation across 4 cores.
+The Mean ATE, Median ATE, and their standard errors are computed following
+the paper's formulas exactly. Results are written to
+\texttt{output/tables/main\_result.tex}, which is \texttt{\textbackslash input\{\}}ed
+directly into this document.
+
+\section{Replication Results}
+
+\input{../output/tables/main_result.tex}
+
+Our replication obtains a Mean ATE of \$9,184 with a standard error of
+1,402, compared to the paper's reported value of \$9,043 (s.e.\ 1,432).
+The difference is \$141, or approximately 1.6\% of the paper's estimate.
+This close match is reassuring and consistent with the theory: the Double
+ML estimator is designed to be robust to the choice of ML method, and
+indeed our Ensemble estimate lands very close to the paper's despite using
+only 10 sample splits rather than 100. The slight discrepancy is expected
+--- with fewer splits the mean estimate has higher sampling variance across
+replications. The standard errors are also very similar (\$1,402 vs
+\$1,432), suggesting the variance estimation procedure is working correctly.
+
+\section{What I Learned}
+
+The easiest part of the replication was the estimation itself --- once the
+helper functions were correctly sourced and the \texttt{DoubleML()} call
+matched \texttt{Master.R} exactly, the code ran without modification. The
+hardest part was the path management: the original code assumed all files
+lived in the same working directory, while the Gentzkow-Shapiro structure
+separates \texttt{input/}, \texttt{code/}, and \texttt{temp/}. In
+particular, \texttt{Moment\_Functions.R} internally sources
+\texttt{ML\_Functions.R} with a bare filename, which required patching
+to use an absolute path. This is a common and underappreciated
+reproducibility failure --- code that works perfectly in the author's
+environment silently breaks in any other directory structure.
+
+More broadly, this replication taught me that Double ML is remarkably
+stable: six very different machine learning methods (RLasso, Trees, Random
+Forest, Boosting, Neural Net, Ensemble) all produce estimates in the
+\$7,900--\$9,200 range, none statistically distinguishable from one another.
+This stability is exactly what the Neyman orthogonality theory predicts,
+and seeing it empirically is more convincing than any theorem. If I were
+the original authors, the one thing that would have made replication easier
+is absolute rather than relative paths in the helper files, and a brief
+note in the README specifying that all scripts must be run from the same
+directory as the data.
+
+\begin{thebibliography}{9}
+\bibitem{paper}
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C.,
+and Newey, W. (2017). ``Double/Debiased/Neyman Machine Learning of
+Treatment Effects.'' \textit{American Economic Review: Papers \&
+Proceedings}, 107(5): 261--265.
+\end{thebibliography}
+
+\end{document}

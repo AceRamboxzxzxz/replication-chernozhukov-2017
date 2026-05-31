@@ -26,7 +26,7 @@ ci_lo      <- mean_ate - 1.96 * mean_se
 ci_hi      <- mean_ate + 1.96 * mean_se
 
 tex <- c(
-  "\\begin{table}[h]",
+  "\\begin{table}[H]",
   "\\centering",
   "\\caption{Replication of Table 1, Panel B (Partially Linear Model, 2-fold) from Chernozhukov et al. (2017)}",
   "\\begin{tabular}{lcc}",
@@ -53,7 +53,7 @@ paper_mean <- c(RLasso=7718, Trees=8745, Forest=9180, Boosting=8768, Nnet=9040, 
 paper_se   <- c(RLasso=1796, Trees=1488, Forest=1526, Boosting=1451, Nnet=1494, Ensemble=1432)
 
 comp_tex <- c(
-  "\\begin{table}[h]",
+  "\\begin{table}[H]",
   "\\centering",
   "\\small",
   "\\caption{Replication vs.\\ Paper: Table 1, Panel B (Partially Linear Model, 2-fold)}",

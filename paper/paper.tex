@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath}
+\usepackage{float}
 
 \title{Replicating Table 1, Panel B from\\Chernozhukov et al.\ (2017)}
 \author{Aaron Chotzen-Jenner}
@@ -84,8 +85,7 @@ cross-fitting. To reduce computation time, the estimation is repeated over
 I used parallel computation across 4 cores of my computer to accelerate
 estimation. The Mean ATE, Median ATE, and their standard errors are computed
 following the paper's formulas exactly. Results are written to
-\texttt{output/tables/main\_result.tex}, which is \texttt{\textbackslash input\{\}}ed
-directly into this document.
+\texttt{output/tables/main\_result.tex}, which is inputted directly into this document.
 
 \section{Replication Results}
 
@@ -93,7 +93,7 @@ directly into this document.
 
 \input{../output/tables/comparison\_table.tex}
 
-The replication estimate reported in Table 1 closely matches the
+\noindent The replication estimate reported in Table 1 closely matches the
 corresponding result in Chernozhukov et al.\ (2017). The estimated average
 treatment effect of 401(k) eligibility on net financial assets is very
 similar to the published estimate, and the associated standard errors are

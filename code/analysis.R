@@ -102,3 +102,47 @@ tex <- c(
 
 writeLines(tex, table_path)
 cat(sprintf("\nLaTeX table written to: %s\n", table_path))
+
+# --- Write comparison table across all methods -------------------------------
+paper_mean <- c(RLasso=7718, Trees=8745, Forest=9180, Boosting=8768, Nnet=9040, Ensemble=9043)
+paper_se   <- c(RLasso=1796, Trees=1488, Forest=1526, Boosting=1451, Nnet=1494, Ensemble=1432)
+
+method_labels <- c("RLasso", "Trees", "Forest", "Boosting", "Nnet", "Ensemble")
+
+comp_tex <- c(
+  "\\begin{table}[h]",
+  "\\centering",
+  "\\small",
+  "\\caption{Replication vs.\\ Paper: Table 1, Panel B (Partially Linear Model, 2-fold)}",
+  "\\begin{tabular}{lcccccc}",
+  "\\hline",
+  " & RLasso & Reg.\\ Tree & Random Forest & Boosting & Neural Net & Ensemble \\\\",
+  "\\hline",
+  "\\multicolumn{7}{l}{\\textit{This Replication}} \\\\",
+  paste("Mean ATE (\\$)",
+        paste(sprintf("$%.0f$", result["Mean ATE", method_labels]), collapse=" & "),
+        sep=" & ") |> paste0(" \\\\"),
+  paste("",
+        paste(sprintf("($%.0f$)", result["se", method_labels]), collapse=" & "),
+        sep=" & ") |> paste0(" \\\\"),
+  "\\hline",
+  "\\multicolumn{7}{l}{\\textit{Chernozhukov et al.\\ (2017)}} \\\\",
+  paste("Mean ATE (\\$)",
+        paste(sprintf("$%.0f$", paper_mean[method_labels]), collapse=" & "),
+        sep=" & ") |> paste0(" \\\\"),
+  paste("",
+        paste(sprintf("($%.0f$)", paper_se[method_labels]), collapse=" & "),
+        sep=" & ") |> paste0(" \\\\"),
+  "\\hline",
+  sprintf("\\multicolumn{7}{l}{\\footnotesize Note: Standard errors in parentheses. Replication based on %d sample splits, 2-fold cross-fitting.} \\\\", ite),
+  "\\multicolumn{7}{l}{\\footnotesize Paper values from Table 1, Panel B of the online appendix.} \\\\",
+  "\\end{tabular}",
+  "\\label{tab:comparison}",
+  "\\end{table}"
+)
+
+writeLines(comp_tex, "output/tables/comparison_table.tex")
+cat("Comparison table written to: output/tables/comparison_table.tex\n")
+
+# Save result matrix for later use
+saveRDS(result, "temp/result_matrix.rds")

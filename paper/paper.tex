@@ -31,10 +31,9 @@ insensitive to small errors in the nuisance parameter estimates. In other
 words, the equation is designed in a way that small mistakes in the machine
 learning predictions have very little impact on the final treatment effect
 estimate. Second, cross-fitting is used to split the sample into folds,
-training the nuisance functions --- which are everything else that needs to
-be estimated besides the main effect --- on held-out data to avoid
-overfitting bias. Together, these two steps remove the regularization bias
-and ensure the final treatment effect estimate is accurate, so therefore not
+training the nuisance functions (everything else that needs to be estimated
+besides the main effect) on held-out data to avoid overfitting bias.
+Together, these two steps remove the regularization bias and therefore not
 distorted by error from the machine learning models.
 
 \section{The Result of Interest}
@@ -45,7 +44,7 @@ online appendix. This result corresponds to the partially linear model with
 2-fold cross-fitting. The paper reports a Mean ATE of \$9,043 with a
 standard error of 1,432.
 
-This result is the headline finding of the paper: after flexibly controlling
+This result is the headline finding of the paper\@: after flexibly controlling
 for income and other confounding factors, 401(k) eligibility increases net
 financial assets by roughly \$9,000. The underlying model estimates the
 relationship between financial assets, 401(k) eligibility, and a set of
@@ -81,12 +80,12 @@ sources the original helper functions \texttt{ML\_Functions.R} and
 \texttt{Moment\_Functions.R} from \texttt{input/}, and calls
 \texttt{DoubleML()} with the partially linear model specification and 2-fold
 cross-fitting. To reduce computation time, the estimation is repeated over
-10 random sample splits rather than the 100 splits used in the original
-paper. I used parallel computation across 4 cores of my computer to
-accelerate estimation. The Mean ATE, Median ATE, and their standard errors
-are computed following the paper's formulas exactly. Results are written to
-\texttt{output/tables/main\_result.tex}, which is
-\texttt{\textbackslash input\{\}}ed directly into this document.
+10 random sample splits rather than the 100 used in the original paper.
+I used parallel computation across 4 cores of my computer to accelerate
+estimation. The Mean ATE, Median ATE, and their standard errors are computed
+following the paper's formulas exactly. Results are written to
+\texttt{output/tables/main\_result.tex}, which is \texttt{\textbackslash input\{\}}ed
+directly into this document.
 
 \section{Replication Results}
 
@@ -121,25 +120,25 @@ errors are also broadly comparable across all methods. These similarities
 suggest that the replication successfully reproduces not only the headline
 Ensemble estimate but also the relative performance of the underlying machine
 learning approaches. The consistency of results across methods reinforces one
-of the paper's central conclusions: when combined with orthogonalization and
+of the paper's central conclusions\@: when combined with orthogonalization and
 cross-fitting, different machine learning algorithms tend to produce similar
 estimates of the treatment effect.
 
 \section{What I Learned}
 
-Once the helper functions were sourced correctly, reproducing the estimation
-was fairly straightforward. The hardest part was path management, as the
-original code assumed all files lived in the same working directory, while
-the Gentzkow-Shapiro structure separates \texttt{input/}, \texttt{code/},
-and \texttt{temp/}. In particular, \texttt{Moment\_Functions.R} internally
-sources \texttt{ML\_Functions.R} with a bare filename, which required
-patching to use an absolute path. This was a pure reproducibility issue:
-code that works perfectly in the author's environment can break when placed
-in a different directory structure. This happened to me before I made the
-fix. If I were the original authors, the one thing that would have made
-replication easier is absolute rather than relative paths in the helper
-files, along with a brief README note specifying how the scripts should be
-run.
+\noindent Once the helper functions were sourced correctly, reproducing the
+estimation was fairly straightforward. The hardest part was path management,
+as the original code assumed all files lived in the same working directory,
+while the Gentzkow-Shapiro structure separates \texttt{input/},
+\texttt{code/}, and \texttt{temp/}. In particular,
+\texttt{Moment\_Functions.R} internally sources \texttt{ML\_Functions.R}
+with a bare filename, which required patching to use an absolute path. This
+was a pure reproducibility issue\@: code that works perfectly in the author's
+environment can break when placed in a different directory structure. This
+happened to me before I made the fix. If I were the original authors, the
+one thing that would have made replication easier is absolute rather than
+relative paths in the helper files, along with a brief README note
+specifying how the scripts should be run.
 
 More broadly, this replication taught me that Double ML is amazingly stable.
 Six very different machine learning methods (RLasso, Trees, Random Forest,

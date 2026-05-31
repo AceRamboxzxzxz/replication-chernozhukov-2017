@@ -21,38 +21,53 @@ causal inference in settings where high-dimensional nuisance parameters must
 be estimated. The central research question is how to obtain valid,
 root-$N$ consistent estimates of a treatment effect parameter $\theta_0$
 when the confounding functions are estimated using flexible machine learning
-methods that introduce regularization bias.
+methods that introduce regularization bias. In simpler terms, the paper
+explains how to measure the true effect of a treatment when machine learning
+is used to control for other factors that may influence the outcome.
 
-The empirical strategy rests on two ingredients. First, the estimating
-equation is made Neyman-orthogonal, meaning it is locally insensitive to
-small errors in the nuisance parameter estimates. Second, cross-fitting
-is used to split the sample into folds, training the nuisance functions
-on held-out data to avoid overfitting bias. Together these two steps
-remove the regularization bias that would otherwise contaminate a naive
-plug-in estimator.
+The authors approach this problem with two main methods. First, the
+estimating equation is made Neyman-orthogonal, meaning it is locally
+insensitive to small errors in the nuisance parameter estimates. In other
+words, the equation is designed in a way that small mistakes in the machine
+learning predictions have very little impact on the final treatment effect
+estimate. Second, cross-fitting is used to split the sample into folds,
+training the nuisance functions --- which are everything else that needs to
+be estimated besides the main effect --- on held-out data to avoid
+overfitting bias. Together, these two steps remove the regularization bias
+and ensure the final treatment effect estimate is accurate, so therefore not
+distorted by error from the machine learning models.
 
 \section{The Result of Interest}
 
 The specific result I replicate is the Mean Average Treatment Effect (ATE)
-reported in Table 1, Panel B, row ``ATE (2 fold),'' Ensemble column of
-the online appendix. This result corresponds to the partially linear model
-with 2-fold cross-fitting. The paper reports a Mean ATE of \$9,043 with
-a standard error of 1,432.
+reported in Table 1, Panel B, row ``ATE (2 fold),'' Ensemble column of the
+online appendix. This result corresponds to the partially linear model with
+2-fold cross-fitting. The paper reports a Mean ATE of \$9,043 with a
+standard error of 1,432.
 
-This result is the headline finding of the empirical illustration: after
-flexibly controlling for income and other confounders using an ensemble of
-machine learning methods, 401(k) eligibility raises net financial assets
-by roughly \$9,000. It is the cleanest single number to target because
-it corresponds to the default specification in the replication code
-(\texttt{Master.R}), uses the partially linear model, and focuses on the
-Ensemble method, which combines the machine learning approaches.
+This result is the headline finding of the paper: after flexibly controlling
+for income and other confounding factors, 401(k) eligibility increases net
+financial assets by roughly \$9,000. The underlying model estimates the
+relationship between financial assets, 401(k) eligibility, and a set of
+demographic and economic control variables. Rather than relying on a single
+machine learning algorithm, the Ensemble method combines predictions from
+several approaches, including Lasso, Random Forests, Boosting, and Neural
+Networks. It assigns more weight to the methods that perform best
+out-of-sample, as the goal is to obtain a more reliable estimate than any
+single method alone.
+
+I chose this result to replicate because it is the paper's primary empirical
+finding, corresponds to the default specification in the replication code
+(\texttt{Master.R}), and illustrates the central idea of Double ML, which is
+using machine learning to control for complex confounding while still
+producing a credible estimate of a causal treatment effect.
 
 \section{Data and Methods}
 
 The data come from the 1991 Survey of Income and Program Participation
-(SIPP), the same dataset used in Chernozhukov and Hansen (2004). The
-sample contains 9,915 observations. The outcome variable \texttt{net\_tfa}
-is net total financial assets, measured in dollars. The treatment variable
+(SIPP), the same dataset used in Chernozhukov and Hansen (2004). The sample
+contains 9,915 observations. The outcome variable \texttt{net\_tfa} is net
+total financial assets, measured in dollars. The treatment variable
 \texttt{e401} is a binary indicator for eligibility to enroll in a 401(k)
 plan. The nine covariates used in the model are age, income, years of
 education, family size, and binary indicators for married status,
@@ -64,14 +79,14 @@ home ownership.
 CSV to \texttt{temp/clean\_data.csv}. \texttt{analysis.R} loads that file,
 sources the original helper functions \texttt{ML\_Functions.R} and
 \texttt{Moment\_Functions.R} from \texttt{input/}, and calls
-\texttt{DoubleML()} with the partially linear model specification and
-2-fold cross-fitting. To reduce computation time, the estimation is
-repeated over 10 random sample splits rather than the 100 splits used in
-the original paper. Parallel computation across 4 cores is used to
+\texttt{DoubleML()} with the partially linear model specification and 2-fold
+cross-fitting. To reduce computation time, the estimation is repeated over
+10 random sample splits rather than the 100 splits used in the original
+paper. I used parallel computation across 4 cores of my computer to
 accelerate estimation. The Mean ATE, Median ATE, and their standard errors
-are computed following the paper's formulas exactly. Results are written
-to \texttt{output/tables/main\_result.tex}, which is
-\texttt{\textbackslash input{}}ed directly into this document.
+are computed following the paper's formulas exactly. Results are written to
+\texttt{output/tables/main\_result.tex}, which is
+\texttt{\textbackslash input\{\}}ed directly into this document.
 
 \section{Replication Results}
 
@@ -83,34 +98,56 @@ The replication estimate reported in Table 1 closely matches the
 corresponding result in Chernozhukov et al.\ (2017). The estimated average
 treatment effect of 401(k) eligibility on net financial assets is very
 similar to the published estimate, and the associated standard errors are
-nearly identical. Given that the original study averages over 100 random
-sample splits while this replication uses only 10, small differences of
-this magnitude are expected. Overall, the replication successfully
-reproduces the paper's central empirical finding that 401(k) eligibility
-substantially increases net financial assets.
+nearly identical. Small differences are expected because the Double ML
+procedure relies on repeated random sample splitting and machine learning
+methods whose predictions vary slightly across replications. The original
+study averages results over 100 random sample splits, while this replication
+uses only 10 splits. This was done to keep computation time manageable on a
+personal computer. With fewer splits, individual random partitions of the
+data have a larger influence on the final estimate, leading to slightly more
+variation across runs. Despite these differences, the replication estimate
+remains within one percent of the published result, suggesting that the
+implementation successfully reproduces the paper's central empirical finding
+that 401(k) eligibility substantially increases net financial assets.
+
+Table 2 provides a comparison of the individual machine learning methods
+used in the replication and the corresponding estimates reported in the
+original paper. While there are modest differences in the point estimates
+across methods, the overall pattern is very similar. In both the replication
+and the paper, RLasso produces the lowest estimated treatment effect, Random
+Forest and Neural Net produce some of the highest estimates, and the
+Ensemble method gives results near the upper end of the range. The standard
+errors are also broadly comparable across all methods. These similarities
+suggest that the replication successfully reproduces not only the headline
+Ensemble estimate but also the relative performance of the underlying machine
+learning approaches. The consistency of results across methods reinforces one
+of the paper's central conclusions: when combined with orthogonalization and
+cross-fitting, different machine learning algorithms tend to produce similar
+estimates of the treatment effect.
 
 \section{What I Learned}
 
 Once the helper functions were sourced correctly, reproducing the estimation
-was straightforward. The hardest part was path management: the original code
-assumed all files lived in the same working directory, while the
-Gentzkow-Shapiro structure separates \texttt{input/}, \texttt{code/}, and
-\texttt{temp/}. In particular, \texttt{Moment\_Functions.R} internally
+was fairly straightforward. The hardest part was path management, as the
+original code assumed all files lived in the same working directory, while
+the Gentzkow-Shapiro structure separates \texttt{input/}, \texttt{code/},
+and \texttt{temp/}. In particular, \texttt{Moment\_Functions.R} internally
 sources \texttt{ML\_Functions.R} with a bare filename, which required
-patching to use an absolute path. This is a common reproducibility issue:
-code that works in the author's environment can break when placed in a
-different directory structure.
-
-More broadly, this replication taught me that Double ML is remarkably
-stable: six very different machine learning methods (RLasso, Trees, Random
-Forest, Boosting, Neural Net, Ensemble) all produce estimates between
-approximately \$7,900 and \$9,200, with substantial overlap in their confidence
-intervals. This stability is exactly what the Neyman orthogonality theory
-predicts, and seeing it empirically is more convincing than any theorem.
-If I were the original authors, the one thing that would have made
+patching to use an absolute path. This was a pure reproducibility issue:
+code that works perfectly in the author's environment can break when placed
+in a different directory structure. This happened to me before I made the
+fix. If I were the original authors, the one thing that would have made
 replication easier is absolute rather than relative paths in the helper
 files, along with a brief README note specifying how the scripts should be
 run.
+
+More broadly, this replication taught me that Double ML is amazingly stable.
+Six very different machine learning methods (RLasso, Trees, Random Forest,
+Boosting, Neural Net, and Ensemble) all produce estimates between
+approximately \$7,900 and \$9,200, with substantial overlap in their
+confidence intervals. This stability is exactly what the Neyman orthogonality
+theory predicts, and seeing it empirically with real-world data was something
+I could have learned only from doing this replication.
 
 \begin{thebibliography}{9}
 \bibitem{paper}

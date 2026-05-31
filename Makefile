@@ -7,7 +7,7 @@ temp/clean_data.csv: input/sipp1991.dta code/preprocess.R
 	Rscript code/preprocess.R
 
 # Analysis
-output/tables/main_result.tex: temp/clean_data.csv code/analysis.R input/ML_Functions.R input/Moment_Functions.R
+output/tables/main_result.tex output/tables/comparison_table.tex: temp/clean_data.csv code/analysis.R input/ML_Functions.R input/Moment_Functions.R
 	Rscript code/analysis.R
 
 # Paper

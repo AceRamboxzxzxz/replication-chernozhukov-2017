@@ -74,55 +74,93 @@ education, family size, and binary indicators for married status,
 two-earner household, defined benefit pension, IRA participation, and
 home ownership.
 
+The partially linear model estimated here takes the form
+\begin{align}
+    Y &= \theta_0 D + g_0(Z) + \zeta, \quad E[\zeta \mid Z, D] = 0,
+        \label{eq:outcome} \\
+    D &= m_0(Z) + \nu, \quad E[\nu \mid Z] = 0, \label{eq:treatment}
+\end{align}
+where $Y$ is net financial assets, $D$ is 401(k) eligibility, $Z$ is the
+vector of covariates, $\theta_0$ is the Average Treatment Effect (ATE) of
+interest, and $g_0(Z)$ and $m_0(Z)$ are unknown nuisance functions estimated
+via machine learning. Equation~(\ref{eq:outcome}) is the outcome equation,
+where $\theta_0$ enters linearly and $g_0(Z)$ captures the flexible effect of
+controls on assets. Equation~(\ref{eq:treatment}) is the treatment equation,
+where $m_0(Z) := E[D \mid Z]$ is the propensity score --- the probability of
+401(k) eligibility given observables.
+
+The key insight of Double ML is that plugging ML estimates of $g_0$ and $m_0$
+directly into a naive regression for $\theta_0$ introduces regularization bias.
+Double ML addresses this problem with two key ideas. First, the estimating
+equation is made Neyman-orthogonal using an orthogonal score such as
+\begin{equation}
+    \psi(W,\theta,\eta) := \bigl(Y - \hat{g}(Z) - \theta(D -
+        \hat{m}(Z))\bigr)(D - \hat{m}(Z)), \label{eq:score}
+\end{equation}
+which is locally insensitive to small errors in the nuisance estimates
+$\hat{g}$ and $\hat{m}$. This amounts to a residuals-on-residuals
+regression: the outcome residual $Y - \hat{g}(Z)$ is regressed on the
+treatment residual $D - \hat{m}(Z)$, removing the influence of covariates
+before estimating the treatment effect. Second, cross-fitting is used to
+avoid overfitting: the nuisance functions are trained on a held-out fold
+and applied to the remaining fold, so that the same observations are never
+used for both nuisance estimation and moment evaluation.
+
 \texttt{preprocess.R} loads the raw Stata file \texttt{sipp1991.dta} from
 \texttt{input/}, selects the eleven relevant variables, and writes a clean
 CSV to \texttt{temp/clean\_data.csv}. \texttt{analysis.R} loads that file,
 sources the original helper functions \texttt{ML\_Functions.R} and
 \texttt{Moment\_Functions.R} from \texttt{input/}, and calls
-\texttt{DoubleML()} with the partially linear model specification and 2-fold
-cross-fitting. To reduce computation time, the estimation is repeated over
+\texttt{DoubleML()} with the partially linear specification above and 2-fold
+cross-fitting. To reduce computation time, I repeated the estimation over
 10 random sample splits rather than the 100 used in the original paper.
 I used parallel computation across 4 cores of my computer to accelerate
 estimation. The Mean ATE, Median ATE, and their standard errors are computed
 following the paper's formulas exactly. Results are written to
-\texttt{output/tables/main\_result.tex}, which is inputted directly into this document.
+\texttt{output/tables/main\_result.tex}, which is included directly in this
+document via \texttt{\textbackslash input\{\}}.
 
 \section{Replication Results}
 
-\input{../output/tables/main\_result.tex}
+\input{../output/tables/main_result.tex}
 
-\input{../output/tables/comparison\_table.tex}
+\input{../output/tables/comparison_table.tex}
 
-\noindent The replication estimate reported in Table 1 closely matches the
-corresponding result in Chernozhukov et al.\ (2017). The estimated average
-treatment effect of 401(k) eligibility on net financial assets is very
-similar to the published estimate, and the associated standard errors are
-nearly identical. Small differences are expected because the Double ML
-procedure relies on repeated random sample splitting and machine learning
-methods whose predictions vary slightly across replications. The original
-study averages results over 100 random sample splits, while this replication
-uses only 10 splits. This was done to keep computation time manageable on a
-personal computer. With fewer splits, individual random partitions of the
-data have a larger influence on the final estimate, leading to slightly more
-variation across runs. Despite these differences, the replication estimate
-remains within one percent of the published result, suggesting that the
-implementation successfully reproduces the paper's central empirical finding
-that 401(k) eligibility substantially increases net financial assets.
+\noindent This replication closely reproduces the headline result. The
+Ensemble estimate of the ATE is \$8,970, compared to \$9,043 reported in
+the paper, a difference of \$73, or less than one percent. The
+replication standard error of 1,407 is nearly identical to the
+paper's 1,432, and the 95\% confidence interval [\$6,212, \$11,728]
+comfortably contains the published point estimate. The Median ATE of
+\$9,017 is also close to the paper's median of \$9,061, confirming that the
+result is not driven by outlier splits.
 
-Table 2 provides a comparison of the individual machine learning methods
-used in the replication and the corresponding estimates reported in the
-original paper. While there are modest differences in the point estimates
-across methods, the overall pattern is very similar. In both the replication
-and the paper, RLasso produces the lowest estimated treatment effect, Random
-Forest and Neural Net produce some of the highest estimates, and the
-Ensemble method gives results near the upper end of the range. The standard
-errors are also broadly comparable across all methods. These similarities
-suggest that the replication successfully reproduces not only the headline
-Ensemble estimate but also the relative performance of the underlying machine
-learning approaches. The consistency of results across methods reinforces one
-of the paper's central conclusions\@: when combined with orthogonalization and
-cross-fitting, different machine learning algorithms tend to produce similar
-estimates of the treatment effect.
+These small discrepancies are expected for a replication like this and can
+be easily explained. The original paper averages over 100 random sample
+splits, but this replication uses only 10. With fewer splits, individual
+random partitions carry more weight, so the mean estimate is more sensitive
+to any one particularly favorable or unfavorable draw of the folds. The
+fact that the two estimates still agree to within one percent despite this
+reduction suggests the procedure is very stable. This is consistent with
+the Neyman orthogonality framework, which suggests that the final treatment
+effect estimate should not be overly sensitive to small errors in the
+nuisance estimates or to a particular sample split.
+
+Table 2 shows the method-by-method comparison. The overall pattern is
+also consistent between the replication and the paper. RLasso produces the
+lowest ATE in both (\$7,603 vs.\ \$7,718), reflecting the tendency of
+$\ell_1$-penalized linear models to underfit when extrapolation is required
+across folds. Random Forest exhibits the largest difference (\$8,757
+vs.\ \$9,180), which may reflect the greater sensitivity of tree-based
+methods to the particular sample splits used in estimation. Random Forest
+and Neural Net sit at the higher end in both cases, and the Ensemble sits
+close to them, as expected given that it up-weights whichever methods
+minimize out-of-sample prediction error. Standard errors are broadly
+comparable across all six methods, with differences generally well below
+100. The consistency of these results across very different machine
+learning approaches can also be seen as a substantive finding, confirming
+the paper's central claim that Neyman orthogonality makes the treatment
+effect estimate robust to the choice of nuisance estimator.
 
 \section{What I Learned}
 

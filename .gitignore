@@ -7,3 +7,4 @@ temp/
 *.toc
 *.synctex.gz
 .DS_Store
+.venv/
